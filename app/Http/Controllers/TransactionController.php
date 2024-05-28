@@ -167,7 +167,7 @@ class TransactionController extends Controller
     public function getTransactionByUserLoggedIn()
     {
         $user = Auth::user();
-        $transaction = Transaction::where('user_id', $user->id)->orderByDesc('created_at')->get();
+        $transaction = Transaction::with('detailTransaction.product')->where('user_id', $user->id)->orderByDesc('created_at')->get();
 
         return response()->json([
             'success' => true,

@@ -175,10 +175,10 @@ class QueueController extends Controller
     {
         switch (count($services)) {
             case 1: // cuma ngeringin aja
-                if ($services[0] == 'kering') {
+                if ($services[0] == 'Kering') {
                     $result = $this->getAvailableMachine('KERING');
                     $queueNow = TempQueue::where('id_transaction', null)->where('layanan', 'KERING')->get();
-                } else if ($services[0] == 'cuci') {
+                } else if ($services[0] == 'Cuci') {
                     $queueNow = TempQueue::where('id_transaction', null)->where('layanan', 'CUCI')->get();
                     $result = $this->getAvailableMachine('CUCI');
                 } else {
@@ -360,13 +360,11 @@ class QueueController extends Controller
                 ], 200);
             }
         } else if ($action == 'expired') {
-            Log::info('Get In into expired queue');
             $failedQueue = FailedQueue::create([
                 'transaction_id' => $queue->id_transaction,
                 'nomor_antrian' => $queue->nomor_antrian,
                 'failed_at' => $done_at
             ]);
-            Log::info('Created Failed Queue: ' . $failedQueue);
 
             if ($queuedQueue != null) {
                 // ada antrian di mesin cuci yang barusan dicancel karna expired
@@ -579,10 +577,9 @@ class QueueController extends Controller
         $transaction = Transaction::where('user_id', $user->id)->whereDate('created_at', Carbon::today())->orderByDesc('created_at')->get();
 
         foreach ($transaction as $data) {
-            $queue = TempQueue::with('mesin', 'transaction.detailTransaction.product')->where('id_transaction', $data->id)->first();
-
+            $queue = TempQueue::with('mesin', 'transaction.detailTransaction.product', 'transaction.transactionToken')->where('id_transaction', $data->id)->first();
             if ($queue == null) {
-                $queue = QueuedQueue::with('todayQueue.mesin', 'transaction.detailTransaction.product')->where('transaction_id', $data->id)->first();
+                $queue = QueuedQueue::with('todayQueue.mesin', 'transaction.detailTransaction.product', 'transaction.transactionToken')->where('transaction_id', $data->id)->first();
 
                 if ($queue == null) {
                     $data = [];
@@ -611,42 +608,6 @@ class QueueController extends Controller
             'success' => true,
             'message' => 'All queue by user logged in successfully retrieved!',
             'data' => $result
-        ], 200);
-    }
-
-    public function test()
-    {
-        // $service = 'KERING'; // 'CUCI' or 'KERING
-        // // $test = QueuedQueue::where(['todayQueue' => function ($query) use ($service) {
-        // //     $query->where('layanan', $service);
-        // // }])->orderBy('updated_at', 'desc')->first();
-
-        // $service = 'CUCI'; // 'CUCI' or 'KERING
-        // $test = QueuedQueue::with('todayQueue')->whereHas('todayQueue', function ($query) use ($service) {
-        //     $query->where('layanan', $service);
-        // })->orderBy('updated_at', 'desc')->first();
-
-        // $nomor_antrian = QueuedQueue::max('nomor_antrian');
-        // $test = QueuedQueue::max('nomor_antrian');
-
-
-        // $queueList = TempQueue::where('layanan', $service)->get();
-        // $test = $this->getAvailableMachine('KERING')['queue'];
-
-        // $test = TempQueue::find($test->queue_id + 1);
-
-        // $queueToday = QueuedQueue::orderBy('updated_at', 'asc')->get();
-        // $test = TempQueue::whereNotIn('id', $queueToday->pluck('queue_id'))->where('layanan', $service)->orderBy('updated_at', 'asc')->first();
-
-        // $test = TempQueue::where('status', 'IDLE')->where('layanan', 'CUCI')->orderBy('updated_at', 'asc')->first();
-
-        // $test = TempQueue::where('id', 158)->where('layanan', $service)->first();
-
-        Log::info('Test Data');
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Test Data',
         ], 200);
     }
 }

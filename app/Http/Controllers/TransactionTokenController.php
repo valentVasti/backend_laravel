@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ThresholdTime;
 use App\Models\Transaction;
 use App\Models\TransactionToken;
 use Carbon\Carbon;
@@ -12,6 +13,7 @@ class TransactionTokenController extends Controller
 {
     public function store($transaction_id){
         $transaction = Transaction::find($transaction_id);
+        $threshold_time = ThresholdTime::first()->threshold_time;
 
         if($transaction == null){
             return [
@@ -32,7 +34,7 @@ class TransactionTokenController extends Controller
                     'transaction_id' => $transaction_id,
                     'token' => $token,
                     'is_used' => false,
-                    'expires_at' => date('Y-m-d H:i:s', strtotime('+1 day'))
+                    'expires_at' => date('Y-m-d H:i:s', strtotime('+'.$threshold_time.' minute'))
                 ]);
 
                 return [
