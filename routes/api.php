@@ -85,7 +85,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // * Threshold Time
     Route::get('thresholdTime', [ThresholdTimeController::class, 'index'])->name('threshold_time.index');
-    Route::put('thresholdTime', [ThresholdTimeController::class, 'edit'])->name('threshold_time.update');
+    Route::put('thresholdTime', [ThresholdTimeController::class, 'update'])->name('threshold_time.update');
 
     // * Max Transaction Time
     Route::get('maxTimeTransaction', [MaxTimeTransactionController::class, 'index'])->name('max_time_transaction.index');

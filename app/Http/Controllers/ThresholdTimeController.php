@@ -18,7 +18,7 @@ class ThresholdTimeController extends Controller
         ]);
     }
 
-    public function edit(Request $request)
+    public function update(Request $request)
     {
         $threshold_time = ThresholdTime::first();
         $threshold_time->threshold_time = $request->threshold_time;

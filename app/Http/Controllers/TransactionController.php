@@ -126,15 +126,16 @@ class TransactionController extends Controller
                 array_push($detailTransaction, $detailTransactionInserted);
             }
 
-            $queueController = new QueueController();
-            $createdQue = $queueController->createTempQueue($transaction->id, $services);
-
             $storeToken = [];
 
             if ($transaction->transaction_from == 'ONLINE') {
                 $transactionTokenController = new TransactionTokenController();
                 $storeToken = $transactionTokenController->store($transaction->id);
             }
+
+            $queueController = new QueueController();
+            $createdQue = $queueController->createTempQueue($transaction->id, $services);
+
 
             if (!$createdQue) {
                 return response()->json([

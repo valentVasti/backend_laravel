@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 
 class MaxTimeTransactionController extends Controller
 {
-    public function index()
+    public function index() 
     {
         $maxTimeTransaction = MaxTimeTransaction::first();
 

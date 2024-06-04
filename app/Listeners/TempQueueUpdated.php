@@ -7,6 +7,7 @@ use App\Http\Controllers\QueueController;
 use App\Jobs\CheckThresholdTime;
 use App\Jobs\ProcessingQueue;
 use App\Models\ThresholdTime;
+use App\Models\TransactionToken;
 use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Casts\Json;
@@ -31,13 +32,20 @@ class TempQueueUpdated
      */
     public function handle(object $event): void
     {
-        Log::info('TempQueueUpdated event: ' . $event->id);
+        Log::info($event);
         $queueController = new QueueController();
         $response = $queueController->isServicesComplete($event->id);
-        Log::info('TempQueueUpdated response: ' . $response);
         $thresholdTime = ThresholdTime::first();
         $thresholdTime = Carbon::createFromFormat('Y-m-d H:i:s', $event->updated_at->addMinutes($thresholdTime->threshold_time));
-         
+        Log::info($event->id_transaction);
+        $transactionToken = TransactionToken::where('transaction_id', $event->id_transaction)->first();
+        Log::info($transactionToken);
+
+        if($transactionToken != null){
+            $transactionToken->expires_at = $thresholdTime;
+            $transactionToken->save();
+        }
+
         switch ($response->getData(true)['data']['action']) {
             case 'Lanjutkan':
                 CheckThresholdTime::dispatch($event->id, 'next')->delay($thresholdTime);

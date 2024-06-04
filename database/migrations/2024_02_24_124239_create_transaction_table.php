@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('paying_method');
             $table->float('total');
             $table->float('paid_sum');
-            $table->string('change');
+            $table->float('change');
             $table->timestamps();
         });
     }

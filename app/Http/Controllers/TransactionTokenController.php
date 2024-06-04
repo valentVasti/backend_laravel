@@ -7,7 +7,6 @@ use App\Models\Transaction;
 use App\Models\TransactionToken;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use PDO;
 
 class TransactionTokenController extends Controller
 {
@@ -34,7 +33,7 @@ class TransactionTokenController extends Controller
                     'transaction_id' => $transaction_id,
                     'token' => $token,
                     'is_used' => false,
-                    'expires_at' => date('Y-m-d H:i:s', strtotime('+'.$threshold_time.' minute'))
+                    'expires_at' => date('Y-m-d H:i:s', strtotime('+1day'))
                 ]);
 
                 return [

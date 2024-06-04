@@ -19,4 +19,12 @@ class OpenCloseQueueLog extends Model
         'created_at',
         'updated_at'
     ];
+
+    public function userOpener(){
+        return $this->belongsTo(User::class, 'user_id_opener', 'id');
+    }
+
+    public function userCloser(){
+        return $this->belongsTo(User::class, 'user_id_closer', 'id');
+    }
 }

@@ -38,17 +38,17 @@ class AuthController extends Controller
 
             $user = User::where('email', $request->email)->first();
 
-            if ((($page == 'admin') && (($user->role != 'KARYAWAN') && ($user->role != 'ADMIN'))) || (($page == 'user') && ($user->role != 'KONSUMEN'))){
-                return response()->json([
-                    'success' => false,
-                    'message' => [
-                        'role' => ['Role tidak sesuai!']
-                    ],
-                    'data' => $user
-                ], 400);
-            }
-
             if ($user != null) {
+                if ((($page == 'admin') && (($user->role != 'KARYAWAN') && ($user->role != 'ADMIN'))) || (($page == 'user') && ($user->role != 'KONSUMEN'))){
+                    return response()->json([
+                        'success' => false,
+                        'message' => [
+                            'role' => ['Role tidak sesuai!']
+                        ],
+                        'data' => $user
+                    ], 400);
+                }
+                
                 $user_password = $user->password;
 
                 if (Hash::check($request->password, $user_password)) {

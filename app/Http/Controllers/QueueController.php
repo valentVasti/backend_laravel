@@ -220,8 +220,7 @@ class QueueController extends Controller
     }
 
     public function nextActionQueue($id, $action)
-    {
-        Log::info('Get In into nextActionQueue function' . $id . ' ' . $action);
+    {+
         $queue = TempQueue::with('mesin')->find($id);
         $done_at = date('Y-m-d H:i:s');
         $queuedQueue = QueuedQueue::where('queue_id', $id)->first();
@@ -535,7 +534,7 @@ class QueueController extends Controller
 
     public function getDoneQueue()
     {
-        $queue = DoneQueue::with('transaction.detailTransaction', 'pencuci', 'pengering')->orderBy('done_at')->get();
+        $queue = DoneQueue::where('created_at', date('Y-m-d'))->with('transaction.detailTransaction', 'pencuci', 'pengering')->orderBy('done_at')->get();
 
         return response()->json([
             'success' => true,
@@ -552,19 +551,6 @@ class QueueController extends Controller
             'success' => true,
             'message' => 'All queue with layanan ' . $layanan . ' successfully retrieved!',
             'data' => $queue
-        ], 200);
-    }
-
-    public function notifyNextOrDoneQueue($id)
-    {
-        broadcast(new NotifyNextOrDoneQueue('NotifyFrontend', 'queue-' . $id))->toOthers();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Event successfully broadcasted!',
-            'data' => [
-                'channel' => 'queue-' . $id
-            ]
         ], 200);
     }
 

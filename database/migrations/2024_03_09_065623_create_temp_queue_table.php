@@ -16,8 +16,8 @@ return new class extends Migration
             $table->foreignId('id_transaction')->nullable()->default(null)->constrained('transaction');
             $table->foreignId('id_mesin')->constrained('mesin');
             $table->integer('nomor_antrian');
-            $table->enum('layanan', ['CUCI', 'KERING', 'KOMPLIT']);
-            $table->string('status');
+            $table->enum('layanan', ['CUCI', 'KERING']);
+            $table->enum('status', ['ONWORK', 'IDLE']);
             $table->timestamps();
         });
     }
