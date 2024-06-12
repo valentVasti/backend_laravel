@@ -38,7 +38,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user/{id}', [UserController::class, 'show'])->name('user.show');
     Route::get('/user/{role}/role', [UserController::class, 'getUserByRole'])->name('user.index');
     Route::post('/user', [UserController::class, 'create'])->name('user.create');
-    Route::put('/user/update', [UserController::class, 'update'])->name('user.update');
+    Route::put('/user/update/{id}', [UserController::class, 'update'])->name('user.update');
     Route::delete('/user/{id}', [UserController::class, 'destroy'])->name('user.destroy');
 
     // * Product
@@ -47,6 +47,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/product', [ProductController::class, 'create'])->name('product.create');
     Route::put('/product/{id}', [ProductController::class, 'update'])->name('product.update');
     Route::delete('/product/{id}', [ProductController::class, 'destroy'])->name('product.destroy');
+    Route::get('/product/{id}/{status}', [ProductController::class, 'setStatus'])->name('product.setStatus');
+    Route::get('/getActiveProduct', [ProductController::class, 'getActiveProduct'])->name('product.getActiveProduct');
 
     // * Transaction
     Route::middleware('maxTime')->group(function () {
@@ -74,6 +76,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/getAllQueueByStatus/{status}', [QueueController::class, 'getQueueByStatus'])->name('queue.getAllQueueByStatus');
     Route::get('/openCloseQueue/{action}', [QueueController::class, 'openQueue'])->name('queue.openQueue');
     Route::get('/getDoneQueue', [QueueController::class, 'getDoneQueue'])->name('queue.getDoneQueue');
+    Route::get('/getFailedQueue', [QueueController::class, 'getFailedQueue'])->name('queue.getFailedQueue');
     Route::get('/getAllOpenCloseQueueLog', [QueueController::class, 'getAllOpenCloseQueueLog'])->name('queue.getAllOpenCloseQueueLog');
     Route::get('/isTodayLogOpened', [QueueController::class, 'isTodayQueueOpened'])->name('queue.getQueueByTransaction');
     Route::get('/nextActionQueue/{id}/{action}', [QueueController::class, 'nextActionQueue'])->name('queue.nextActionQueue');

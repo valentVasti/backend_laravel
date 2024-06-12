@@ -34,7 +34,6 @@ class ProcessingQueue implements ShouldQueue
     {
         $queueController = new QueueController();
         $response = $queueController->nextActionQueue($this->queue_id, $this->action);
-        Log::info('Queue with transaction ID: ' . $this->queue_id . 'and action :' . $this->action);
         broadcast(new NotifyNextOrDoneQueue($response, 'queue-channel'))->toOthers();
     }
 }

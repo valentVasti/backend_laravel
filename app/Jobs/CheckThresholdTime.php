@@ -37,19 +37,18 @@ class CheckThresholdTime implements ShouldQueue
      */
     public function handle(): void
     {
-        $thresholdTime = ThresholdTime::first();
         $queue = TempQueue::find($this->queue_id);
         $id_transaction = $queue->id_transaction;
         $transaction_token = TransactionToken::where('transaction_id', $id_transaction)->first();
-        $delayUntil = Carbon::createFromFormat('Y-m-d H:i:s', $queue->updated_at->addMinutes($queue->mesin->durasi_penggunaan - $thresholdTime->threshold_time));
-        
+        $delayUntil = Carbon::createFromFormat('Y-m-d H:i:s', $queue->updated_at->addMinutes($queue->mesin->durasi_penggunaan));
+           
+        Log::info('Start again after check threhold until: '.$delayUntil);
         if ($transaction_token) {
             if ($transaction_token->is_used) {
                 // lanjut ke berikutnya, kasi delay menit - threshold
                 ProcessingQueue::dispatch($this->queue_id, $this->action)->delay($delayUntil);
             } else {
                 // udah lewatin thereshold time tapi token belum used, asumsi user belom dateng
-                Log::info('Token belum digunakan, queue_id: ' . $this->queue_id . ' expired');  
                 $queueController = new QueueController();
                 $queueController->nextActionQueue($this->queue_id, 'expired');
                 broadcast(new NotifyNextOrDoneQueue('expired queue', 'queue-channel'))->toOthers();

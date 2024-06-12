@@ -32,32 +32,32 @@ class TempQueueUpdated
      */
     public function handle(object $event): void
     {
-        Log::info($event);
-        $queueController = new QueueController();
-        $response = $queueController->isServicesComplete($event->id);
-        $thresholdTime = ThresholdTime::first();
-        $thresholdTime = Carbon::createFromFormat('Y-m-d H:i:s', $event->updated_at->addMinutes($thresholdTime->threshold_time));
-        Log::info($event->id_transaction);
-        $transactionToken = TransactionToken::where('transaction_id', $event->id_transaction)->first();
-        Log::info($transactionToken);
+        if ($event->status != 'IDLE') {
+            $queueController = new QueueController();
+            $response = $queueController->isServicesComplete($event->id);
+            $thresholdTime = ThresholdTime::first();
+            $thresholdTime = Carbon::createFromFormat('Y-m-d H:i:s', $event->updated_at->addMinutes($thresholdTime->threshold_time));
+            $transactionToken = TransactionToken::where('transaction_id', $event->id_transaction)->first();
+            Log::info('Start Time: '.$event->updated_at.' | Check Threshold Time Until: '.$thresholdTime);
 
-        if($transactionToken != null){
-            $transactionToken->expires_at = $thresholdTime;
-            $transactionToken->save();
+            if ($transactionToken != null) {
+                $transactionToken->expires_at = $thresholdTime;
+                $transactionToken->save();
+            }
+
+            switch ($response->getData(true)['data']['action']) {
+                case 'Lanjutkan':
+                    CheckThresholdTime::dispatch($event->id, 'next')->delay($thresholdTime);
+                    break;
+
+                case 'Selesai':
+                    CheckThresholdTime::dispatch($event->id, 'done')->delay($thresholdTime);
+                    break;
+
+                default:
+                    break;
+            }
+            broadcast(new NotifyNextOrDoneQueue($response, 'queue-channel'))->toOthers();
         }
-
-        switch ($response->getData(true)['data']['action']) {
-            case 'Lanjutkan':
-                CheckThresholdTime::dispatch($event->id, 'next')->delay($thresholdTime);
-                break;
-
-            case 'Selesai':
-                CheckThresholdTime::dispatch($event->id, 'done')->delay($thresholdTime);
-                break;
-
-            default:
-                break;
-        }
-        broadcast(new NotifyNextOrDoneQueue($response, 'queue-channel'))->toOthers();
     }
 }

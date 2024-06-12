@@ -19,6 +19,17 @@ class ProductController extends Controller
         ], 200);
     }
 
+    public function getActiveProduct()
+    {
+        $product = Product::where('status', 1)->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => "All product retrieved successfully!",
+            'data' => $product
+        ], 200);
+    }
+
     public function show($id)
     {
         $product = Product::find($id);
@@ -119,6 +130,7 @@ class ProductController extends Controller
 
     public function destroy($id)
     {
+        
         $product = Product::find($id);
 
         if ($product == null) {
@@ -133,6 +145,28 @@ class ProductController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Product deleted successfully!',
+            ], 200);
+        }
+    }
+    public function setStatus($id, $status)
+    {
+        $product = Product::find($id);
+
+        if ($product == null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product not found!',
+                'data' => $product
+            ], 404);
+        } else {
+            $product->update([
+                'status' => $status
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product status updated successfully!',
+                'data' => $product
             ], 200);
         }
     }

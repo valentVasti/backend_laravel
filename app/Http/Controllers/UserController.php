@@ -171,6 +171,12 @@ class UserController extends Controller
             ], 404);
         }
 
+        if($request->phone_num == $user->phone_num){
+            $phoneNumValidation = 'required|numeric|starts_with:0|digits_between:11,14';
+        }else{
+            $phoneNumValidation = 'required|numeric|starts_with:0|digits_between:11,14|unique:users,phone_num';
+        }
+
         $validateData = Validator::make(
             [
                 'name' => $request->name,
@@ -178,11 +184,14 @@ class UserController extends Controller
                 'phone_num' => $request->phone_num,
             ],
             [
-                'name' => 'string',
-                'email' => 'string|email',
-                'phone_num' => 'number|starts_with:0|digits_between:11,14|unique:users,phone_num',
+                'name' => 'required|string',
+                'email' => 'required|string|email',
+                'phone_num' => $phoneNumValidation,
             ],
             [
+                'email.required' => 'Email wajib diisi!',
+                'name.required' => 'Nama wajib diisi!',
+                'phone_num.required' => 'Nomor Telepon wajib diisi!',
                 'email.email' => 'Format email tidak valid!',
                 'phone_num.starts_with' => 'Nomor Telepon wajib dimulai dengan angka 0!',
                 'phone_num.digits_between' => 'Nomor Telepon memiliki min. 11 dan maks. 14 digit!',
@@ -193,7 +202,7 @@ class UserController extends Controller
         if ($validateData->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => $validateData
+                'message' => $validateData->errors(),
             ], 400);
         }
 

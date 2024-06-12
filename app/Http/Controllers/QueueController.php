@@ -12,13 +12,14 @@ use Illuminate\Support\Facades\Auth;
 use App\Events\NotifyNextOrDoneQueue;
 use App\Models\FailedQueue;
 use Carbon\Carbon;
+use Dflydev\DotAccessData\Data;
 use Illuminate\Support\Facades\Log;
 
 class QueueController extends Controller
 {
     public function getAll()
     {
-        $queuedQueue = TempQueue::with('mesin')->get();
+        $queuedQueue = TempQueue::with('mesin', 'transaction.transactionToken')->get();
 
         return response()->json([
             'success' => true,
@@ -140,7 +141,7 @@ class QueueController extends Controller
 
     public function getAllOpenCloseQueueLog()
     {
-        $queueLog = OpenCloseQueueLog::all();
+        $queueLog = OpenCloseQueueLog::with('userOpener', 'userCloser')->get();
 
         return response()->json([
             'success' => true,
@@ -220,20 +221,15 @@ class QueueController extends Controller
     }
 
     public function nextActionQueue($id, $action)
-    {+
+    {
         $queue = TempQueue::with('mesin')->find($id);
         $done_at = date('Y-m-d H:i:s');
         $queuedQueue = QueuedQueue::where('queue_id', $id)->first();
         $doneQueue = DoneQueue::where('id_transaction', $queue->id_transaction)->first();
-        Log::info('Queue: ' . $queue);
-        Log::info('Queued Queue: ' . $queuedQueue);
-        Log::info('Done Queue: ' . $doneQueue);
 
         if ($action == 'done') {
-            Log::info('Get In into done queue');
             if ($doneQueue != null) {
                 // update done queue, brrti dia done dari next
-                Log::info('Updated Done from Done');
                 $doneQueue->update([
                     $queue->mesin->jenis_mesin == 'PENCUCI' ? 'pencuci' : 'pengering' => $queue->mesin->id,
                     'done_at' => $done_at
@@ -247,9 +243,6 @@ class QueueController extends Controller
                     'nomor_antrian' => $queue->nomor_antrian,
                     'done_at' => $done_at
                 ]);
-                Log::info('Created Done from Done');
-                Log::info('Done Queue: ' . $doneQueue);
-                Log::info('Mesin Column: ' . $queue->mesin->kode_mesin);
             }
 
             if ($queuedQueue != null) {
@@ -274,7 +267,6 @@ class QueueController extends Controller
                 'data' => $doneQueue
             ], 200);
         } else if ($action == 'next') {
-            Log::info('Get In into next queue');
             $emptyQueue = $this->getAvailableMachine('KERING')['queue'];
 
             $doneQueue = DoneQueue::create([
@@ -283,10 +275,6 @@ class QueueController extends Controller
                 'nomor_antrian' => $queue->nomor_antrian,
                 'done_at' => null
             ]);
-
-            Log::info('Created Done from Next');
-            Log::info('Done Queue: ' . $doneQueue);
-            Log::info('Mesin Column: ' . $queue->mesin->kode_mesin);
 
             if ($emptyQueue->id_transaction == null) {
                 // next services kosong antriannya, lsg update di pengering
@@ -374,6 +362,18 @@ class QueueController extends Controller
                 ]);
                 $queuedQueue->delete();
             } else {
+                // if ($queue->layanan == 'CUCI') {
+                //     $queuedQueue = QueuedQueue::with('todayQueue', 'transaction.transactionToken')
+                //         ->whereHas('todayQueue', fn ($query) => $query->where('layanan', 'CUCI'))
+                //         ->whereHas('transaction.transactionToken', fn ($query) => $query->where('is_used', 1))
+                //         ->orderBy('nomor_antrian', 'asc')
+                //         ->first();
+                //     Log::info('Kering Queued:', [$queuedQueue]);
+                // } else if ($queue->layanan == 'KERING') {
+                //     $queuedQueue = QueuedQueue::with('todayQueue.transactionToken')->whereHas('todayQueue', fn ($query) => $query->where('layanan', 'KERING'))->orderBy('nomor_antrian', 'asc')->first();
+                //     Log::info('Kering Queued:', [$queuedQueue]);
+                // }
+
                 // tidak ada antrian di queuedqueue, lsg kosongin
                 $queue->update([
                     'id_transaction' => null,
@@ -427,20 +427,10 @@ class QueueController extends Controller
 
         $queuedMaxNomorAntrian = QueuedQueue::max('nomor_antrian');
         $onWorkMaxNomorAntrian = TempQueue::max('nomor_antrian');
-        $doneQueueMaxNomorAntrian = DoneQueue::where('created_at', date('Y-m-d H:i:s'))->max('nomor_antrian');
-        $failedQueueMaxNomorAntrian = FailedQueue::where('created_at', date('Y-m-d H:i:s'))->max('nomor_antrian');
+        $doneQueueMaxNomorAntrian = DoneQueue::whereDate('created_at', date('Y-m-d'))->max('nomor_antrian');
+        $failedQueueMaxNomorAntrian = FailedQueue::whereDate('created_at', date('Y-m-d'))->max('nomor_antrian');
 
-        if ($queuedMaxNomorAntrian > $onWorkMaxNomorAntrian && $queuedMaxNomorAntrian > $doneQueueMaxNomorAntrian && $queuedMaxNomorAntrian > $failedQueueMaxNomorAntrian) {
-            $nomor_antrian = $queuedMaxNomorAntrian;
-        } else if ($onWorkMaxNomorAntrian > $queuedMaxNomorAntrian && $onWorkMaxNomorAntrian > $doneQueueMaxNomorAntrian && $onWorkMaxNomorAntrian > $failedQueueMaxNomorAntrian) {
-            $nomor_antrian = $onWorkMaxNomorAntrian;
-        } else if ($doneQueueMaxNomorAntrian > $queuedMaxNomorAntrian && $doneQueueMaxNomorAntrian > $onWorkMaxNomorAntrian && $doneQueueMaxNomorAntrian > $failedQueueMaxNomorAntrian) {
-            $nomor_antrian = $doneQueueMaxNomorAntrian;
-        } else if ($failedQueueMaxNomorAntrian > $queuedMaxNomorAntrian && $failedQueueMaxNomorAntrian > $onWorkMaxNomorAntrian && $failedQueueMaxNomorAntrian > $doneQueueMaxNomorAntrian) {
-            $nomor_antrian = $failedQueueMaxNomorAntrian;
-        } else {
-            $nomor_antrian = 0;
-        }
+        $nomor_antrian = max([$queuedMaxNomorAntrian, $onWorkMaxNomorAntrian, $doneQueueMaxNomorAntrian, $failedQueueMaxNomorAntrian]);
 
         $result = [
             'nomor_antrian' => $nomor_antrian + 1,
@@ -523,7 +513,7 @@ class QueueController extends Controller
 
     public function getQueuedQueue()
     {
-        $queue = QueuedQueue::with('todayQueue.mesin')->get();
+        $queue = QueuedQueue::with('todayQueue.mesin', 'transaction.transactionToken')->get();
 
         return response()->json([
             'success' => true,
@@ -534,7 +524,18 @@ class QueueController extends Controller
 
     public function getDoneQueue()
     {
-        $queue = DoneQueue::where('created_at', date('Y-m-d'))->with('transaction.detailTransaction', 'pencuci', 'pengering')->orderBy('done_at')->get();
+        $queue = DoneQueue::whereDate('created_at', date('Y-m-d'))->with('transaction.detailTransaction', 'pencuci', 'pengering')->orderBy('done_at')->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'All done queue successfully retrieved!',
+            'data' => $queue
+        ], 200);
+    }
+
+    public function getFailedQueue()
+    {
+        $queue = FailedQueue::whereDate('created_at', date('Y-m-d'))->orderBy('failed_at')->get();
 
         return response()->json([
             'success' => true,
@@ -545,7 +546,7 @@ class QueueController extends Controller
 
     public function getQueueByLayanan($layanan)
     {
-        $queue = TempQueue::with('mesin')->where('layanan', $layanan)->get();
+        $queue = TempQueue::with('mesin', 'transaction.transactionToken')->where('layanan', $layanan)->get();
 
         return response()->json([
             'success' => true,

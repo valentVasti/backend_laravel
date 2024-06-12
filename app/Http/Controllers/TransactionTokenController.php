@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\NotifyNextOrDoneQueue;
 use App\Models\ThresholdTime;
 use App\Models\Transaction;
 use App\Models\TransactionToken;
@@ -104,6 +105,8 @@ class TransactionTokenController extends Controller
             $transactionToken->update([
                 'is_used' => true
             ]);
+
+            broadcast(new NotifyNextOrDoneQueue('token used', 'queue-channel'))->toOthers();
 
             return response()->json([
                 'success' => true,
