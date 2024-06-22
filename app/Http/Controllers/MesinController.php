@@ -176,13 +176,13 @@ class MesinController extends Controller
         }
     }
 
-    public function getActiveMachineByJenis($jenis)
+    public function getAllActiveMachine()
     {
-        $mesin = Mesin::where('jenis_mesin', $jenis)->where('status_maintenance', 1)->get();
+        $mesin = Mesin::where('status_maintenance', 0)->orderBy('kode_mesin', 'asc')->get();
 
         return response()->json([
             'success' => true,
-            'message' => 'Mesin with jenis ' . $jenis . ' successfully retrieved!',
+            'message' => 'Active machine successfully retrieved!',
             'data' => $mesin
         ], 200);
     }

@@ -38,7 +38,7 @@ class TempQueueUpdated
             $thresholdTime = ThresholdTime::first();
             $thresholdTime = Carbon::createFromFormat('Y-m-d H:i:s', $event->updated_at->addMinutes($thresholdTime->threshold_time));
             $transactionToken = TransactionToken::where('transaction_id', $event->id_transaction)->first();
-            Log::info('Start Time: '.$event->updated_at.' | Check Threshold Time Until: '.$thresholdTime);
+            Log::info('Start Time: ' . $event->updated_at . ' | Check Threshold Time Until: ' . $thresholdTime);
 
             if ($transactionToken != null) {
                 $transactionToken->expires_at = $thresholdTime;

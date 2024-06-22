@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\NotifyFrontend;
+use App\Events\NotifyNextOrDoneQueue;
 use App\Events\NotifyOnWorkQueue;
 use App\Events\NotifyQueuedQueue;
 use App\Models\DetailTransaction;
@@ -149,7 +150,7 @@ class TransactionController extends Controller
             } else if ($createdQue['status'] == 'ONWORK') {
                 broadcast(new NotifyOnWorkQueue('Machine ' . $createdQue['mesin']['kode_mesin'] . ' updated!', 'machine-' . $createdQue['mesin']['kode_mesin']))->toOthers();
             } else if ($createdQue['queue_id'] != null) {
-                broadcast(new NotifyQueuedQueue('New Queued!', 'queued'))->toOthers();
+                broadcast(new NotifyNextOrDoneQueue('New Queued!', 'queue-channel'))->toOthers();
             }
 
             return response()->json([

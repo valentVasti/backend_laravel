@@ -28,9 +28,8 @@ class QueueController extends Controller
         ], 200);
     }
 
-    public function openQueue($action)
+    public function openCloseQueue($action)
     {
-        // TODO buat di frontend sekalian open close queue, sama tampilin temp_queue di queueWindow
         $todayTimestamp = date('Y-m-d H:i:s');
 
         if ($action == 'open') {
@@ -213,8 +212,7 @@ class QueueController extends Controller
                 'nomor_antrian' => $result['nomor_antrian'],
                 'transaction_id' => $id_transaction
             ]);
-
-            $queue = QueuedQueue::with('todayQueue.mesin')->find($queue->id);
+            $queue = QueuedQueue::with('todayQueue.mesin', 'transaction.transactionToken')->find($queue->id);
         }
 
         return $queue;
@@ -223,11 +221,12 @@ class QueueController extends Controller
     public function nextActionQueue($id, $action)
     {
         $queue = TempQueue::with('mesin')->find($id);
-        $done_at = date('Y-m-d H:i:s');
         $queuedQueue = QueuedQueue::where('queue_id', $id)->first();
         $doneQueue = DoneQueue::where('id_transaction', $queue->id_transaction)->first();
 
         if ($action == 'done') {
+            $done_at = date('Y-m-d H:i:s');
+
             if ($doneQueue != null) {
                 // update done queue, brrti dia done dari next
                 $doneQueue->update([
@@ -347,6 +346,8 @@ class QueueController extends Controller
                 ], 200);
             }
         } else if ($action == 'expired') {
+            $done_at = date('Y-m-d H:i:s');
+
             $failedQueue = FailedQueue::create([
                 'transaction_id' => $queue->id_transaction,
                 'nomor_antrian' => $queue->nomor_antrian,
@@ -362,24 +363,26 @@ class QueueController extends Controller
                 ]);
                 $queuedQueue->delete();
             } else {
-                // if ($queue->layanan == 'CUCI') {
-                //     $queuedQueue = QueuedQueue::with('todayQueue', 'transaction.transactionToken')
-                //         ->whereHas('todayQueue', fn ($query) => $query->where('layanan', 'CUCI'))
-                //         ->whereHas('transaction.transactionToken', fn ($query) => $query->where('is_used', 1))
-                //         ->orderBy('nomor_antrian', 'asc')
-                //         ->first();
-                //     Log::info('Kering Queued:', [$queuedQueue]);
-                // } else if ($queue->layanan == 'KERING') {
-                //     $queuedQueue = QueuedQueue::with('todayQueue.transactionToken')->whereHas('todayQueue', fn ($query) => $query->where('layanan', 'KERING'))->orderBy('nomor_antrian', 'asc')->first();
-                //     Log::info('Kering Queued:', [$queuedQueue]);
-                // }
+                $queueStuck = QueuedQueue::with('todayQueue.mesin', 'transaction.transactionToken')->get();
+                $queueStuck = $queueStuck->where('todayQueue.layanan', $queue->layanan);
+                $queueStuck = $queueStuck->where('transaction.transactionToken.is_used', 1)->concat($queueStuck->where('transaction.transactionToken', null))->first();
 
-                // tidak ada antrian di queuedqueue, lsg kosongin
-                $queue->update([
-                    'id_transaction' => null,
-                    'nomor_antrian' => 0,
-                    'status' => 'IDLE'
-                ]);
+                if ($queueStuck != null) {
+                    $queue->update([
+                        'id_transaction' => $queueStuck->transaction_id,
+                        'nomor_antrian' => $queueStuck->nomor_antrian,
+                        'status' => 'ONWORK'
+                    ]);
+                    $queuedQueueStuck = QueuedQueue::find($queueStuck->id);
+                    $queuedQueueStuck->delete();
+                } else {
+                    // tidak ada antrian di queuedqueue, lsg kosongin
+                    $queue->update([
+                        'id_transaction' => null,
+                        'nomor_antrian' => 0,
+                        'status' => 'IDLE'
+                    ]);
+                }
             }
         } else {
             return response()->json([
@@ -405,18 +408,14 @@ class QueueController extends Controller
         }
 
         if ($emptyQueue == null) {
-            // antrian onwork penuh, tapi belum ada antrian lain di queued
             $queueToday = QueuedQueue::orderBy('updated_at', 'asc')->get();
             $emptyQueue = TempQueue::whereNotIn('id', $queueToday->pluck('queue_id'))->where('layanan', $service)->orderBy('updated_at', 'asc')->first();
 
             if ($emptyQueue == null) {
-                // antrian onwork penuh, dan antrian queued juga penuh
-                // harus cari mesin yang paling cepat selesai
                 $queuedQueue = QueuedQueue::with('todayQueue')->whereHas('todayQueue', function ($query) use ($service) {
                     $query->where('layanan', $service);
                 })->orderBy('updated_at', 'desc')->first();
 
-                // $todayQueByServices = TempQueue::where('layanan', $service)->get();
                 $emptyQueue = TempQueue::where('id', $queuedQueue->queue_id + 1)->where('layanan', $service)->first();
 
                 if ($emptyQueue == null) {
@@ -450,7 +449,6 @@ class QueueController extends Controller
                 'message' => 'Queue not yet have transaction!',
                 'data' => [
                     'action' => '',
-                    'color' => 'default'
                 ]
             ], 200);
         }
@@ -467,16 +465,13 @@ class QueueController extends Controller
         $result = count($services) == 2 ?
             [
                 'action' => 'Lanjutkan',
-                'color' => 'primary'
             ] : [
                 'action' => 'Selesai',
-                'color' => 'success'
             ];
 
         if ($queue->layanan == 'KERING') {
             $result = [
                 'action' => 'Selesai',
-                'color' => 'success'
             ];
         }
 
@@ -595,6 +590,34 @@ class QueueController extends Controller
             'success' => true,
             'message' => 'All queue by user logged in successfully retrieved!',
             'data' => $result
+        ], 200);
+    }
+
+    public function test()
+    {
+        $queue = QueuedQueue::with('todayQueue.mesin', 'transaction.transactionToken')
+            // ->whereHas('transaction.transactionToken', fn ($query) => $query->where('is_used', 1))
+            ->get();
+
+        $queue = $queue->where('todayQueue.layanan', 'CUCI');
+        $queue = $queue->where('transaction.transactionToken.is_used', 1)->concat($queue->where('transaction.transactionToken', null))->first();
+
+        // if ($queue->layanan == 'CUCI') {
+        //     $queuedQueue = QueuedQueue::with('todayQueue', 'transaction.transactionToken')
+        //         ->whereHas('todayQueue', fn ($query) => $query->where('layanan', 'CUCI'))
+        //         ->whereHas('transaction.transactionToken', fn ($query) => $query->where('is_used', 1))
+        //         ->orderBy('nomor_antrian', 'asc')
+        //         ->first();
+        //     Log::info('Kering Queued:', [$queuedQueue]);
+        // } else if ($queue->layanan == 'KERING') {
+        //     $queuedQueue = QueuedQueue::with('todayQueue.transactionToken')->whereHas('todayQueue', fn ($query) => $query->where('layanan', 'KERING'))->orderBy('nomor_antrian', 'asc')->first();
+        //     Log::info('Kering Queued:', [$queuedQueue]);
+        // }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Test success!',
+            'data' => $queue
         ], 200);
     }
 }

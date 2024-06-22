@@ -67,14 +67,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/mesin/{id}', [MesinController::class, 'update'])->name('mesin.update');
     Route::delete('/mesin/{id}', [MesinController::class, 'destroy'])->name('mesin.destroy');
     Route::get('/mesin/{id}/{status}', [MesinController::class, 'setStatus'])->name('mesin.setStatus');
-    Route::get('/getMachineByJenis/{jenis}', [MesinController::class, 'getActiveMachineByJenis'])->name('mesin.getMachineByJenis');
+    Route::get('/getAllActiveMachine', [MesinController::class, 'getAllActiveMachine'])->name('mesin.getMachineByJenis');
 
     // * Queue
     Route::get('/queue', [QueueController::class, 'getAll'])->name('queue.index');
     Route::get('/isServicesComplete/{id}', [QueueController::class, 'isServicesComplete'])->name('queue.check-services');
     Route::get('/getOnWorkQueueByMachine/{kode_mesin}', [QueueController::class, 'getOnWorkQueueByMachine'])->name('queue.getQueueByMachine');
     Route::get('/getAllQueueByStatus/{status}', [QueueController::class, 'getQueueByStatus'])->name('queue.getAllQueueByStatus');
-    Route::get('/openCloseQueue/{action}', [QueueController::class, 'openQueue'])->name('queue.openQueue');
+    Route::get('/openCloseQueue/{action}', [QueueController::class, 'openCloseQueue'])->name('queue.openCloseQueue');
     Route::get('/getDoneQueue', [QueueController::class, 'getDoneQueue'])->name('queue.getDoneQueue');
     Route::get('/getFailedQueue', [QueueController::class, 'getFailedQueue'])->name('queue.getFailedQueue');
     Route::get('/getAllOpenCloseQueueLog', [QueueController::class, 'getAllOpenCloseQueueLog'])->name('queue.getAllOpenCloseQueueLog');
@@ -100,3 +100,5 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::get('/getQueuedQueue', [QueueController::class, 'getQueuedQueue'])->name('queue.getQueuedQueue');
 Route::get('/getQueueByLayanan/{layanan}', [QueueController::class, 'getQueueByLayanan'])->name('queue.getQueueByLayanan');
+
+Route::get('/test', [QueueController::class, 'test'])->name('queue.test');
