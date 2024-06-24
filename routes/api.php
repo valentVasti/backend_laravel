@@ -87,7 +87,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/token', [TransactionTokenController::class, 'useToken'])->name('token.useToken');
 
     // * Threshold Time
-    Route::get('thresholdTime', [ThresholdTimeController::class, 'index'])->name('threshold_time.index');
     Route::put('thresholdTime', [ThresholdTimeController::class, 'update'])->name('threshold_time.update');
 
     // * Max Transaction Time
@@ -97,6 +96,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // * Test
     Route::get('/test', [QueueController::class, 'test'])->name('queue.test');
 });
+
+Route::get('thresholdTime', [ThresholdTimeController::class, 'index'])->name('threshold_time.index');
 
 Route::get('/getQueuedQueue', [QueueController::class, 'getQueuedQueue'])->name('queue.getQueuedQueue');
 Route::get('/getQueueByLayanan/{layanan}', [QueueController::class, 'getQueueByLayanan'])->name('queue.getQueueByLayanan');
