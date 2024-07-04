@@ -52,6 +52,7 @@ class TransactionController extends Controller
     public function create(Request $request)
     {
         $karyawan = Auth::user();
+        Log::info($karyawan);
 
         if ($karyawan->role != 'KARYAWAN' && $karyawan->role != 'ADMIN') {
             $transaction_from = 'ONLINE';
